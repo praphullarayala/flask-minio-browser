@@ -1,19 +1,23 @@
-# Flask S3 Browser
+# Simple Flask AWS S3 Uploader
+Simple and quick AWS S3 upload capability for Flask using Boto3 &amp; env variables
 
-Creating a virtual environment is recommended.
+## Download and install locally
+1. `git clone git@github.com:jelmerdejong/simple-flask-s3-uploader.git`
+2. `cd simple-flask-s3-uploader`
+3. `mkvirtualenv simple-flask-s3-uploader`
+4. `pip install -r requirements.txt`
 
-Creating virtual environment using Python 3 installed with Homebrew:
-```shell
-virtualenv -p python3 venv --always-copy
-source venv/bin/activate
+## Set local environment variables
+Open your environments postactive file (`nano $VIRTUAL_ENV/bin/postactivate`) and add the following lines:
+```
+cd ~/Projects/simple-flask-s3-uploader
+export APP_SETTINGS="config.DevelopmentConfig"
+export SECRET_KEY="your-random-secret-key"
+export S3_BUCKET="your-bucket-name"
+export S3_KEY="your-aws-secret-key"
+export S3_SECRET_ACCESS_KEY="your-aws-secret-access-key"
 ```
 
-Install Dependencies
-
-```shell
-pip install -r requirements.txt
-```
-
-## Configuration
-
-Create a new file `.env` using the contents of `.env-sample`. If you are not using the AWS CLI, modify the placeholders to add your AWS credentials and bucket name.
+## Run it!
+1. `export FLASK_APP=app.py`
+2. `flask run`
