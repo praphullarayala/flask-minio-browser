@@ -1,41 +1,70 @@
-# IMPORTS
-from flask import Flask, render_template, request
-from werkzeug.utils import secure_filename
-import os
+from flask import Flask, render_template, request, redirect, url_for, flash, \
+    Response, session
+from flask_bootstrap import Bootstrap
+from filters import datetimeformat, file_type
+from resources import get_bucket, get_buckets_list
 
-# CONFIG
-app = Flask(__name__, instance_relative_config=True)
-app.config.from_object(os.environ['APP_SETTINGS'])
-
-
-from tools import upload_file_to_s3
-
-ALLOWED_EXTENSIONS = app.config["ALLOWED_EXTENSIONS"]
+app = Flask(__name__)
+Bootstrap(app)
+app.secret_key = 'secret'
+app.jinja_env.filters['datetimeformat'] = datetimeformat
+app.jinja_env.filters['file_type'] = file_type
 
 
-# ROUTES
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-@app.route("/", methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        # There is no file selected to upload
-        if "user_file" not in request.files:
-            return "No user_file key in request.files"
-
-        file = request.files["user_file"]
-
-        # There is no file selected to upload
-        if file.filename == "":
-            return "Please select a file"
-
-        # File is selected, upload to S3 and show S3 URL
-        if file and allowed_file(file.filename):
-            file.filename = secure_filename(file.filename)
-            output = upload_file_to_s3(file, app.config["S3_BUCKET"])
-            return str(output)
+        bucket = request.form['bucket']
+        session['bucket'] = bucket
+        return redirect(url_for('files'))
     else:
-        return render_template("index.html")
+        buckets = get_buckets_list()
+        return render_template("index.html", buckets=buckets)
+
+
+@app.route('/files')
+def files():
+    my_bucket, summaries = get_bucket()
+    #summaries = filelist.objects.all()
+
+    return render_template('files.html', my_bucket=my_bucket, files=summaries)
+
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    file = request.files['file']
+
+    my_bucket = get_bucket()
+    my_bucket.Object(file.filename).put(Body=file)
+
+    flash('File uploaded successfully')
+    return redirect(url_for('files'))
+
+
+@app.route('/delete', methods=['POST'])
+def delete():
+    key = request.form['key']
+
+    my_bucket = get_bucket()
+    my_bucket.Object(key).delete()
+
+    flash('File deleted successfully')
+    return redirect(url_for('files'))
+
+
+@app.route('/download', methods=['POST'])
+def download():
+    key = request.form['key']
+
+    my_bucket = get_bucket()
+    file_obj = my_bucket.Object(key).get()
+
+    return Response(
+        file_obj['Body'].read(),
+        mimetype='text/plain',
+        headers={"Content-Disposition": "attachment;filename={}".format(key)}
+    )
+
+
+if __name__ == "__main__":
+    app.run()

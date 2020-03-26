@@ -1,16 +1,16 @@
-import boto3
-from config import S3_BUCKET, S3_KEY, S3_SECRET
+from minio import Minio
+from minio.error import ResponseError
+from configur import S3_BUCKET, S3_KEY, S3_SECRET
 from flask import session
 
 def _get_s3_resource():
     if S3_KEY and S3_SECRET:
-        return boto3.resource(
-            's3',
-            aws_access_key_id=S3_KEY,
-            aws_secret_access_key=S3_SECRET
-        )
+        return Minio('play.min.io',
+                  access_key='Q3AM3UQ867SPQQA43P2F',
+                  secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
+                  secure=True)
     else:
-        return boto3.resource('s3')
+        return 0
 
 
 def get_bucket():
@@ -20,9 +20,10 @@ def get_bucket():
     else:
         bucket = S3_BUCKET
 
-    return s3_resource.Bucket(bucket)
-
+    return(bucket,s3_resource.list_objects(bucket))
 
 def get_buckets_list():
-    client = boto3.client('s3')
-    return client.list_buckets().get('Buckets')
+  minioClient = Minio('play.min.io',
+                    access_key='Q3AM3UQ867SPQQA43P2F',
+                    secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG')
+  return minioClient.list_buckets()
